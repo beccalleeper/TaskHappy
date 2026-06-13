@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 10);
