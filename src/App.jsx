@@ -801,7 +801,9 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ position: "relative", display: "inline-block" }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: completing ? "#bbb" : "#1A1A2E", transition: "color 0.3s" }}>
+          <span onClick={onEdit} role="button" tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(); } }}
+            style={{ fontSize: 15, fontWeight: 800, color: completing ? "#bbb" : "#1A1A2E", transition: "color 0.3s", cursor: "pointer", textDecoration: completing ? "none" : "underline", textDecorationColor: completing ? "transparent" : (cat?.color ? cat.color + "55" : "#ddd"), textUnderlineOffset: 3 }}>
             {cat?.emoji} {task.name}
           </span>
           {completing && <span className="strike-line" style={{ color: cat?.color || "#FF6B6B" }} />}
@@ -823,14 +825,10 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
         <span style={{ fontSize: 12, fontWeight: 800, color, background: color + "18", padding: "3px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{label}</span>
         {nx && <span style={{ fontSize: 11, fontWeight: 700, color: "#C77DFF", background: "#C77DFF18", padding: "2px 8px", borderRadius: 10 }}>👤 {nx}</span>}
         {task.assignMode === "any" && <span style={{ fontSize: 11, fontWeight: 700, color: "#4ECDC4", background: "#4ECDC418", padding: "2px 8px", borderRadius: 10 }}>Anyone</span>}
-        <div style={{ display: "flex", gap: 4 }}>
-          <button className="pill-btn" onClick={onViewHistory}
-            style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, background: "#f0f0ff", color: "#C77DFF" }}>
-            📅 {historyCount}
-          </button>
-          <button className="pill-btn" onClick={onEdit}
-            style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, background: "#f5f5f5", color: "#888" }}>✏️</button>
-        </div>
+        <button className="pill-btn" onClick={onViewHistory}
+          style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, background: "#f0f0ff", color: "#C77DFF" }}>
+          📅 {historyCount}
+        </button>
       </div>
     </div>
   );
@@ -840,7 +838,6 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
 const TABLE_COLS = [
   { key: "status", label: "", width: 44 },
   { key: "history", label: "", width: 40 },
-  { key: "edit", label: "", width: 40 },
   { key: "name", label: "Task", width: undefined },
   { key: "due", label: "Due Date", width: 110 },
   { key: "status_label", label: "Status", width: 120 },
@@ -884,7 +881,7 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
   });
 
   const toggleSort = (key) => {
-    if (key === "status" || key === "history" || key === "edit") return;
+    if (key === "status" || key === "history") return;
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -907,7 +904,7 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
                     textAlign: col.key === "name" ? "left" : "left",
                     padding: "10px 12px",
                     fontWeight: 800, color: "#888", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5,
-                    cursor: (col.key === "status" || col.key === "history" || col.key === "edit") ? "default" : "pointer",
+                    cursor: (col.key === "status" || col.key === "history") ? "default" : "pointer",
                     whiteSpace: "nowrap", userSelect: "none",
                     width: col.width,
                   }}>
@@ -963,12 +960,10 @@ function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdi
         <button className="pill-btn" onClick={onViewHistory}
           style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, background: "#f0f0ff", color: "#C77DFF" }}>📅</button>
       </td>
-      <td style={{ padding: "8px 6px" }}>
-        <button className="pill-btn" onClick={onEdit}
-          style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, background: "#f5f5f5", color: "#888" }}>✏️</button>
-      </td>
       <td style={{ padding: "8px 12px", fontWeight: 800, color: "#1A1A2E", whiteSpace: "nowrap", position: "relative" }}>
-        <span style={{ textDecoration: completing ? "line-through" : "none", transition: "text-decoration 0.3s" }}>
+        <span onClick={onEdit} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(); } }}
+          style={{ textDecoration: completing ? "line-through" : "underline", textDecorationColor: completing ? "currentColor" : (cat?.color ? cat.color + "55" : "#ddd"), textUnderlineOffset: 3, transition: "text-decoration 0.3s", cursor: "pointer" }}>
           {cat?.emoji} {task.name}
         </span>
       </td>
