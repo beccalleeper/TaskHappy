@@ -1,3 +1,5 @@
+Code
+
 import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 
@@ -127,7 +129,7 @@ const formatDateLong = (dateStr) => {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 };
 const DEFAULT_CATEGORIES = [
-  { id: "car-stuff", name: "Car Stuff", emoji: "🚗", color: "#4ECDC4" },
+  { id: "car-stuff", name: "Car Stuff", emoji: "🚙", color: "#4ECDC4" },
   { id: "personal-care", name: "Personal Care", emoji: "✨", color: "#C77DFF" },
   { id: "housework", name: "House Work", emoji: "🏠", color: "#FF6B6B" },
 ];
@@ -322,23 +324,11 @@ function Confetti({ x, y }) {
 // with a happy-face badge in the corner — matches the TaskHappy app icon.
 function TaskHappyMark({ size = 40 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      {/* Checklist square outline */}
-      <rect x="8" y="8" width="68" height="68" rx="18" stroke="#C77DFF" strokeWidth="9" fill="none" />
-      {/* Green checkmark */}
-      <path d="M22 38 L32 48 L52 26" stroke="#5FD9A4" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      {/* Lavender bar (top) */}
-      <rect x="46" y="32" width="22" height="9" rx="4.5" fill="#DCC9F7" />
-      {/* Coral dot */}
-      <circle cx="27" cy="60" r="9" fill="#FF8A80" />
-      {/* Lavender bar (bottom) */}
-      <rect x="42" y="55" width="14" height="9" rx="4.5" fill="#DCC9F7" />
-      {/* Happy face badge */}
-      <circle cx="76" cy="76" r="22" fill="#FFD15C" stroke="#FFFEF7" strokeWidth="3" />
-      <path d="M65 70 a5 5 0 0 1 9 0" stroke="#1A1A2E" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-      <path d="M79 70 a5 5 0 0 1 9 0" stroke="#1A1A2E" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-      <path d="M68 80 a9 7 0 0 0 16 0" stroke="#1A1A2E" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-    </svg>
+    <img
+      src="https://i.ibb.co/3yRQsM0C/IMG-7031.png"
+      alt="TaskHappy logo"
+      style={{ width: size, height: size, borderRadius: 10, flexShrink: 0, objectFit: "cover" }}
+    />
   );
 }
 
@@ -674,13 +664,13 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
             )}
           </div>
           <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
+            <button className="pill-btn" onClick={() => setViewMode("compact")}
+              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+              ✔️ Compact
+            </button>
             <button className="pill-btn" onClick={() => setViewMode("cutesy")}
               style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
               🌈 Cutesy
-            </button>
-            <button className="pill-btn" onClick={() => setViewMode("compact")}
-              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
-              📊 Compact
             </button>
           </div>
         </div>
@@ -1335,7 +1325,7 @@ function ManageView({ categories, tasks, users, onAddTask, onEditTask, onDeleteT
                     {task.assignMode === "any" ? "Anyone" : task.assignMode === "alternate" ? "Alternating" : task.assignedTo}
                   </div>
                   <button className="pill-btn" onClick={() => onViewHistory(task)}
-                    style={{ fontSize: 12, padding: "5px 10px", borderRadius: 10, background: "#f0f0ff", color: "#C77DFF" }}>📅 {(task.history || []).length}</button>
+                    style={{ fontSize: 12, padding: "5px 10px", borderRadius: 10, background: "#f0f0ff", color: "#C77DFF" }}>🗓️ {(task.history || []).length}</button>
                   <button className="pill-btn" onClick={() => onEditTask(task)}
                     style={{ fontSize: 12, padding: "5px 12px", borderRadius: 10, background: "#f5f5f5", color: "#555" }}>✏️</button>
                   <button className="pill-btn" onClick={() => onDeleteTask(task.id)}
@@ -1461,7 +1451,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1A1A2E" }}>{task ? "✏️ Edit Task" : "✨ Add Task"}</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1A1A2E" }}>{task ? "✏️ Edit Task" : "➕Add Task"}</h3>
           <button className="pill-btn" onClick={onClose} style={{ padding: "6px 12px", borderRadius: 10, background: "#f5f5f5", color: "#888" }}>✕</button>
         </div>
 
@@ -1534,7 +1524,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
         {/* Completion History (editing only) */}
         {task && (
           <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
-            <div style={{ fontWeight: 800, color: "#555", fontSize: 14, marginBottom: 12 }}>📅 Completion History</div>
+            <div style={{ fontWeight: 800, color: "#555", fontSize: 14, marginBottom: 12 }}>🗓️ Completion History</div>
 
             {/* Stats chips */}
             {history.length > 0 && (
@@ -1613,7 +1603,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
             style={{ flex: 1, padding: "12px", borderRadius: 14, background: "#f5f5f5", color: "#666", fontSize: 15 }}>Cancel</button>
           <button className="pill-btn" onClick={handleSave}
             style={{ flex: 2, padding: "12px", borderRadius: 14, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15 }}>
-            {task ? "Save Changes" : "✨ Add Task"}
+            {task ? "Save Changes" : "➕Add Task"}
           </button>
         </div>
       </div>
@@ -1627,7 +1617,7 @@ function CategoryModal({ cat, onSave, onClose }) {
   const [emoji, setEmoji] = useState(cat?.emoji || "☑️");
   const [color, setColor] = useState(cat?.color || "#FFD93D");
   const COLORS = ["#FFD93D","#FF6B6B","#4ECDC4","#C77DFF","#06D6A0","#FF9F43","#74B9FF","#FD79A8","#A29BFE","#55EFC4"];
-  const EMOJIS = ["💍","⭐","🎯","💪","🏡","🌿","🚙","💰","🎨","🎵","🐾","🌸","🎮","📚","🍎","💊","🧹","🌟"];
+  const EMOJIS = ["⭐","🎯","💪","✝️","🌿","💵","🍼","🐾","🎉","🐶","🐱"," 📚","🍎","💊","🧹","💍 ","🧺"];
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -1674,7 +1664,7 @@ function CategoryModal({ cat, onSave, onClose }) {
           <button className="pill-btn" onClick={() => { if (name.trim()) onSave({ ...(cat || {}), name: name.trim(), emoji, color }); }}
             style={{ flex: 2, padding: "12px", borderRadius: 14, background: color, color: "#fff", fontSize: 15 }}>
             {emoji} Save
-          </button>
+   K       </button>
         </div>
       </div>
     </div>
