@@ -613,160 +613,215 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
 
   return (
     <div style={{ flex: 1, padding: "24px", maxWidth: viewMode === "compact" ? 1200 : 900, margin: "0 auto", width: "100%" }}>
-      {/* Status overview bar */}
-      <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📊 Task Status</span>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <StatusLegendItem color="#FF6B6B" label="Overdue" value={overdueTasks} />
-            <StatusLegendItem color="#FFD93D" label="Due Soon" value={dueSoonTasks} />
-            <StatusLegendItem color="#06D6A0" label="On Track" value={onTrack} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>· {total} total</span>
-          </div>
-        </div>
-        {total === 0 ? (
-          <div style={{ height: 14, borderRadius: 8, background: "#f0f0f0" }} />
-        ) : (
-          <div style={{ display: "flex", height: 14, borderRadius: 8, overflow: "hidden", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.08)" }}>
-            {overduePct > 0 && (
-              <div style={{ width: `${overduePct}%`, background: "linear-gradient(90deg, #FF6B6B, #FF9F43)", transition: "width 0.4s ease" }} />
-            )}
-            {dueSoonPct > 0 && (
-              <div style={{ width: `${dueSoonPct}%`, background: "linear-gradient(90deg, #FFD93D, #B6E388)", transition: "width 0.4s ease" }} />
-            )}
-            {onTrackPct > 0 && (
-              <div style={{ width: `${onTrackPct}%`, background: "linear-gradient(90deg, #B6E388, #06D6A0)", transition: "width 0.4s ease" }} />
-            )}
-          </div>
-        )}
-      </div>
 
-      <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
-            <select className="form-input" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}
-              style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
-              <option value="all">All Categories</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
-            </select>
-            <select className="form-input" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
-              style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
-              <option value="all">👤 All Users</option>
-              {users.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-            {viewMode === "cutesy" && (
-              <button className="pill-btn" onClick={() => setGroupBy(g => g === "category" ? "none" : "category")}
-                style={{ padding: "6px 14px", borderRadius: 20, background: groupBy === "category" ? "#C77DFF" : "#f5f5f5", color: groupBy === "category" ? "#fff" : "#555", fontSize: 13 }}>
-                {groupBy === "category" ? "📂 Grouped" : "📋 Flat"}
-              </button>
-            )}
-          </div>
-          <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
-            <button className="pill-btn" onClick={() => setViewMode("compact")}
-              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
-              ✔️ Compact
-            </button>
-            <button className="pill-btn" onClick={() => setViewMode("cutesy")}
-              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
-              🌈 Cutesy
-            </button>
-          </div>
-        </div>
-
-        {/* Status slider */}
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📍 Showing</span>
-            <span style={{ fontSize: 13, fontWeight: 800,
-              color: statusFilter === 0 ? "#FF6B6B" : statusFilter === 1 ? "#FFD93D" : "#1A1A2E",
-              background: statusFilter === 0 ? "#FFE5E5" : statusFilter === 1 ? "#FFFBE1" : "#F5F5F5",
-              padding: "3px 12px", borderRadius: 10 }}>
-              {STATUS_FILTER_STEPS[statusFilter].label}
-            </span>
-          </div>
-          <input type="range" min={0} max={4} step={1} value={statusFilter}
-            onChange={(e) => setStatusFilter(parseInt(e.target.value))}
-            className="status-slider" style={{ width: "100%", accentColor: "#FF9F43" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            {STATUS_FILTER_STEPS.map((s, i) => (
-              <span key={i} onClick={() => setStatusFilter(i)}
-                style={{ fontSize: 10, fontWeight: statusFilter === i ? 800 : 600, color: statusFilter === i ? "#FF9F43" : "#ccc", cursor: "pointer", textAlign: "center", flex: 1, whiteSpace: "nowrap", userSelect: "none" }}>
-                {s.short}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {visibleTasks.length === 0 && tasks.length > 0 && (statusFilter === 0 || statusFilter === 1) ? (
-        // All-caught-up celebration state (#4)
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: 72, marginBottom: 16 }}>🎉</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: "#1A1A2E", marginBottom: 10 }}>
-            You're all caught up!
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>
-            Nothing overdue or due today. 
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#C77DFF", marginBottom: 32 }}>
-            Do something nice for yourself and come back tomorrow. 💜
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
-            <button className="pill-btn" onClick={() => setStatusFilter(3)}
-              style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>
-              👀 See what's coming this week
-            </button>
-            <button className="pill-btn" onClick={() => setStatusFilter(4)}
-              style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>
-              📋 See all tasks
-            </button>
-          </div>
-        </div>
-      ) : visibleTasks.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "#bbb" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🌟</div>
-          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>No tasks here!</div>
-          <div style={{ fontWeight: 600, marginBottom: 20 }}>Add some tasks to get started.</div>
+      {tasks.length === 0 ? (
+        /* ── Empty state: image → Add button → status bar → filters ── */
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+          <img
+            src="https://i.ibb.co/tpZ2ctVK/IMG-7030.png"
+            alt="Welcome to TaskHappy"
+            style={{ width: "min(340px, 90vw)", borderRadius: 24, boxShadow: "0 8px 40px rgba(0,0,0,0.10)" }}
+          />
           <button className="pill-btn" onClick={onAddTask}
-            style={{ padding: "12px 28px", borderRadius: 24, background: "#FFD93D", color: "#1A1A2E", fontSize: 15 }}>+ Add First Task</button>
-        </div>
-      ) : viewMode === "compact" ? (
-        <div>
-          <TaskTable tasks={visibleTasks} categories={categories} users={users}
-            animatingIds={animatingIds} onCheckClick={onCheckClick} onEdit={onEditTask} />
-          <button className="pill-btn" onClick={onAddTask}
-            style={{ width: "100%", padding: "14px", borderRadius: 16, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15, marginTop: 12 }}>
-            + Add Task
+            style={{ padding: "14px 36px", borderRadius: 24, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 17, fontWeight: 900, boxShadow: "0 4px 16px rgba(255,159,67,0.35)" }}>
+            ✨ Add First Task
           </button>
-        </div>
-      ) : (
-        <div>
-          {groupedTasks.map(({ cat, tasks: gTasks }) => (
-            <div key={cat?.id || "all"} style={{ marginBottom: 28 }}>
-              {cat && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 22 }}>{cat.emoji}</span>
-                  <span style={{ fontSize: 17, fontWeight: 800, color: cat.color }}>{cat.name}</span>
-                  <div style={{ flex: 1, height: 2, background: cat.color, borderRadius: 2, opacity: 0.3 }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa" }}>{gTasks.length} tasks</span>
-                </div>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {gTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} categories={categories} users={users}
-                    completing={animatingIds.has(task.id)}
-                    onCheckClick={(e) => onCheckClick(task, e)}
-                    onEdit={() => onEditTask(task)}
-                  />
+
+          {/* Status bar */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", boxShadow: "0 4px 16px rgba(0,0,0,0.07)", width: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📊 Task Status</span>
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <StatusLegendItem color="#FF6B6B" label="Overdue" value={0} />
+                <StatusLegendItem color="#FFD93D" label="Due Soon" value={0} />
+                <StatusLegendItem color="#06D6A0" label="On Track" value={0} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>· 0 total</span>
+              </div>
+            </div>
+            <div style={{ height: 14, borderRadius: 8, background: "#f0f0f0" }} />
+          </div>
+
+          {/* Filters */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", boxShadow: "0 4px 16px rgba(0,0,0,0.07)", width: "100%" }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
+                <select className="form-input" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}
+                  style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
+                  <option value="all">All Categories</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                </select>
+                <select className="form-input" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
+                  style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
+                  <option value="all">👤 All Users</option>
+                  {users.map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
+                <button className="pill-btn" onClick={() => setViewMode("compact")}
+                  style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+                  ✔️ Compact
+                </button>
+                <button className="pill-btn" onClick={() => setViewMode("cutesy")}
+                  style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+                  🌈 Cutesy
+                </button>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📍 Showing</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#1A1A2E", background: "#F5F5F5", padding: "3px 12px", borderRadius: 10 }}>
+                  {STATUS_FILTER_STEPS[statusFilter].label}
+                </span>
+              </div>
+              <input type="range" min={0} max={4} step={1} value={statusFilter}
+                onChange={(e) => setStatusFilter(parseInt(e.target.value))}
+                className="status-slider" style={{ width: "100%", accentColor: "#FF9F43" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                {STATUS_FILTER_STEPS.map((s, i) => (
+                  <span key={i} onClick={() => setStatusFilter(i)}
+                    style={{ fontSize: 10, fontWeight: statusFilter === i ? 800 : 600, color: statusFilter === i ? "#FF9F43" : "#ccc", cursor: "pointer", textAlign: "center", flex: 1, whiteSpace: "nowrap", userSelect: "none" }}>
+                    {s.short}
+                  </span>
                 ))}
               </div>
             </div>
-          ))}
-          <button className="pill-btn" onClick={onAddTask}
-            style={{ width: "100%", padding: "14px", borderRadius: 16, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15, marginTop: 8 }}>
-            + Add Task
-          </button>
+          </div>
         </div>
+      ) : (
+        /* ── Normal state: status bar → filters → task list → add button ── */
+        <>
+          {/* Status overview bar */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📊 Task Status</span>
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <StatusLegendItem color="#FF6B6B" label="Overdue" value={overdueTasks} />
+                <StatusLegendItem color="#FFD93D" label="Due Soon" value={dueSoonTasks} />
+                <StatusLegendItem color="#06D6A0" label="On Track" value={onTrack} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>· {total} total</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", height: 14, borderRadius: 8, overflow: "hidden", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.08)" }}>
+              {overduePct > 0 && <div style={{ width: `${overduePct}%`, background: "linear-gradient(90deg, #FF6B6B, #FF9F43)", transition: "width 0.4s ease" }} />}
+              {dueSoonPct > 0 && <div style={{ width: `${dueSoonPct}%`, background: "linear-gradient(90deg, #FFD93D, #B6E388)", transition: "width 0.4s ease" }} />}
+              {onTrackPct > 0 && <div style={{ width: `${onTrackPct}%`, background: "linear-gradient(90deg, #B6E388, #06D6A0)", transition: "width 0.4s ease" }} />}
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
+                <select className="form-input" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}
+                  style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
+                  <option value="all">All Categories</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                </select>
+                <select className="form-input" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
+                  style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
+                  <option value="all">👤 All Users</option>
+                  {users.map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+                {viewMode === "cutesy" && (
+                  <button className="pill-btn" onClick={() => setGroupBy(g => g === "category" ? "none" : "category")}
+                    style={{ padding: "6px 14px", borderRadius: 20, background: groupBy === "category" ? "#C77DFF" : "#f5f5f5", color: groupBy === "category" ? "#fff" : "#555", fontSize: 13 }}>
+                    {groupBy === "category" ? "📂 Grouped" : "📋 Flat"}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
+                <button className="pill-btn" onClick={() => setViewMode("compact")}
+                  style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+                  ✔️ Compact
+                </button>
+                <button className="pill-btn" onClick={() => setViewMode("cutesy")}
+                  style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+                  🌈 Cutesy
+                </button>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📍 Showing</span>
+                <span style={{ fontSize: 13, fontWeight: 800,
+                  color: statusFilter === 0 ? "#FF6B6B" : statusFilter === 1 ? "#FFD93D" : "#1A1A2E",
+                  background: statusFilter === 0 ? "#FFE5E5" : statusFilter === 1 ? "#FFFBE1" : "#F5F5F5",
+                  padding: "3px 12px", borderRadius: 10 }}>
+                  {STATUS_FILTER_STEPS[statusFilter].label}
+                </span>
+              </div>
+              <input type="range" min={0} max={4} step={1} value={statusFilter}
+                onChange={(e) => setStatusFilter(parseInt(e.target.value))}
+                className="status-slider" style={{ width: "100%", accentColor: "#FF9F43" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                {STATUS_FILTER_STEPS.map((s, i) => (
+                  <span key={i} onClick={() => setStatusFilter(i)}
+                    style={{ fontSize: 10, fontWeight: statusFilter === i ? 800 : 600, color: statusFilter === i ? "#FF9F43" : "#ccc", cursor: "pointer", textAlign: "center", flex: 1, whiteSpace: "nowrap", userSelect: "none" }}>
+                    {s.short}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Task list */}
+          {visibleTasks.length === 0 && (statusFilter === 0 || statusFilter === 1) ? (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ fontSize: 72, marginBottom: 16 }}>🎉</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#1A1A2E", marginBottom: 10 }}>You're all caught up!</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>Nothing overdue or due today.</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#C77DFF", marginBottom: 32 }}>Do something nice for yourself and come back tomorrow. 💜</div>
+              <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+                <button className="pill-btn" onClick={() => setStatusFilter(3)} style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>👀 See what's coming this week</button>
+                <button className="pill-btn" onClick={() => setStatusFilter(4)} style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>📋 See all tasks</button>
+              </div>
+            </div>
+          ) : visibleTasks.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "#bbb" }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>🔍</div>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>No tasks match this filter.</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>Try adjusting the category, user, or date range.</div>
+            </div>
+          ) : viewMode === "compact" ? (
+            <div>
+              <TaskTable tasks={visibleTasks} categories={categories} users={users}
+                animatingIds={animatingIds} onCheckClick={onCheckClick} onEdit={onEditTask} />
+              <button className="pill-btn" onClick={onAddTask}
+                style={{ width: "100%", padding: "14px", borderRadius: 16, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15, marginTop: 12 }}>
+                + Add Task
+              </button>
+            </div>
+          ) : (
+            <div>
+              {groupedTasks.map(({ cat, tasks: gTasks }) => (
+                <div key={cat?.id || "all"} style={{ marginBottom: 28 }}>
+                  {cat && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <span style={{ fontSize: 22 }}>{cat.emoji}</span>
+                      <span style={{ fontSize: 17, fontWeight: 800, color: cat.color }}>{cat.name}</span>
+                      <div style={{ flex: 1, height: 2, background: cat.color, borderRadius: 2, opacity: 0.3 }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa" }}>{gTasks.length} tasks</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {gTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} categories={categories} users={users}
+                        completing={animatingIds.has(task.id)}
+                        onCheckClick={(e) => onCheckClick(task, e)}
+                        onEdit={() => onEditTask(task)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <button className="pill-btn" onClick={onAddTask}
+                style={{ width: "100%", padding: "14px", borderRadius: 16, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15, marginTop: 8 }}>
+                + Add Task
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
