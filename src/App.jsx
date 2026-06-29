@@ -1,5 +1,3 @@
-Code
-
 import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 
@@ -1451,7 +1449,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1A1A2E" }}>{task ? "✏️ Edit Task" : "➕Add Task"}</h3>
+          <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1A1A2E" }}>{task ? "✏️ Edit Task" : "➕ Add Task"}</h3>
           <button className="pill-btn" onClick={onClose} style={{ padding: "6px 12px", borderRadius: 10, background: "#f5f5f5", color: "#888" }}>✕</button>
         </div>
 
@@ -1524,7 +1522,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
         {/* Completion History (editing only) */}
         {task && (
           <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
-            <div style={{ fontWeight: 800, color: "#555", fontSize: 14, marginBottom: 12 }}>🗓️ Completion History</div>
+            <div style={{ fontWeight: 800, color: "#555", fontSize: 14, marginBottom: 12 }}>📅 Completion History</div>
 
             {/* Stats chips */}
             {history.length > 0 && (
@@ -1603,7 +1601,7 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
             style={{ flex: 1, padding: "12px", borderRadius: 14, background: "#f5f5f5", color: "#666", fontSize: 15 }}>Cancel</button>
           <button className="pill-btn" onClick={handleSave}
             style={{ flex: 2, padding: "12px", borderRadius: 14, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15 }}>
-            {task ? "Save Changes" : "➕Add Task"}
+            {task ? "Save Changes" : "➕ Add Task"}
           </button>
         </div>
       </div>
@@ -1664,7 +1662,7 @@ function CategoryModal({ cat, onSave, onClose }) {
           <button className="pill-btn" onClick={() => { if (name.trim()) onSave({ ...(cat || {}), name: name.trim(), emoji, color }); }}
             style={{ flex: 2, padding: "12px", borderRadius: 14, background: color, color: "#fff", fontSize: 15 }}>
             {emoji} Save
-   K       </button>
+          </button>
         </div>
       </div>
     </div>
