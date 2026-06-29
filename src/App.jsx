@@ -90,40 +90,42 @@ const nextAssignee = (task, users) => {
   return users[(idx + 1) % users.length];
 };
 
-// Status slider (acts as a "days until due" window):
-// 0=overdue only (excludes due-today), 1=due tomorrow or sooner, 2=due in 2 days or sooner,
-// 3=due in 3 days or sooner, 4=due in 4 days or sooner, 5=due within the week, 6=all
+// Status filter steps:
+// 0=overdue only, 1=due today + overdue, 2=tomorrow + above, 3=this week + above, 4=all
 const STATUS_FILTER_STEPS = [
   { label: "Overdue", short: "Overdue" },
   { label: "Due Today", short: "Today" },
   { label: "Due Tomorrow", short: "Tomorrow" },
-  { label: "Due in 2 Days", short: "2 Days" },
-  { label: "Due in 3 Days", short: "3 Days" },
   { label: "Due This Week", short: "This Week" },
   { label: "All Tasks", short: "All" },
 ];
 
-// daysOverdue: positive = overdue, 0 = due today, negative = due in future (-1 = tomorrow, etc.)
-// Step 0 ("Overdue") shows ONLY tasks that are strictly overdue (d > 0), or never done.
-// Steps 1-5 widen the window to include tasks due today through that many days out,
-// while overdue tasks remain visible at every step since they're always due.
 const matchesStatusFilter = (task, step) => {
-  if (step === 6) return true; // All
+  if (step === 4) return true; // All
   const d = daysOverdue(task);
-  if (d === 999) return true; // never-done tasks always show
-  if (step === 0) return d > 0; // Overdue only — excludes due-today (d === 0)
-  if (d >= 0) return true; // overdue or due-today tasks show at steps 1-5
+  if (d === 999) return true; // never-done tasks always show (treated as overdue)
   switch (step) {
-    case 1: return d >= -1; // Due Today + Tomorrow
-    case 2: return d >= -2; // Due within 2 days
-    case 3: return d >= -3; // Due within 3 days
-    case 4: return d >= -4; // Due within 4 days
-    case 5: return d >= -7; // Due within the week
+    case 0: return d > 0;    // Overdue only (strictly past due)
+    case 1: return d >= 0;   // Due today + overdue
+    case 2: return d >= -1;  // Due tomorrow or sooner
+    case 3: return d >= -7;  // Due within the week
     default: return true;
   }
 };
 
 // ── default data ──────────────────────────────────────────────────────────────
+// formatDateShort: "June 27" (for due date column)
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+};
+// formatDateLong: "June 27, 2026" (everywhere else)
+const formatDateLong = (dateStr) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+};
 const DEFAULT_CATEGORIES = [
   { id: "car-stuff", name: "Car Stuff", emoji: "🚗", color: "#4ECDC4" },
   { id: "personal-care", name: "Personal Care", emoji: "✨", color: "#C77DFF" },
@@ -348,9 +350,9 @@ export default function App() {
   const [view, setView] = useState("dashboard");
   const [selectedCat, setSelectedCat] = useState("all");
   const [filterUser, setFilterUser] = useState("all");
-  const [statusFilter, setStatusFilter] = useState(6); // 0=overdue,1=today,2=tomorrow,3=2days,4=3days,5=week,6=all
+  const [statusFilter, setStatusFilter] = useState(1); // 0=overdue, 1=due today, 2=tomorrow, 3=this week, 4=all
   const [groupBy, setGroupBy] = useState("category");
-  const [viewMode, setViewMode] = useState("cutesy"); // cutesy | compact
+  const [viewMode, setViewMode] = useState("compact"); // cutesy | compact
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddCat, setShowAddCat] = useState(false);
   const [editTask, setEditTask] = useState(null);
@@ -546,7 +548,6 @@ export default function App() {
           onCheckClick={handleCheckClick}
           onAddTask={() => setShowAddTask(true)}
           onEditTask={setEditTask}
-          onViewHistory={setHistoryTask}
         />
       )}
       {view === "manage" && (
@@ -581,7 +582,7 @@ export default function App() {
       )}
       {showAddTask && (
         <TaskModal categories={categories} users={users}
-          onSave={(t) => { setTasks((ts) => [...ts, { ...t, id: uid(), completions: 0, history: [] }]); setShowAddTask(false); }}
+          onSave={(t) => { setTasks((ts) => [...ts, { ...t, id: uid() }]); setShowAddTask(false); }}
           onClose={() => setShowAddTask(false)}
         />
       )}
@@ -612,7 +613,7 @@ function StatusLegendItem({ color, label, value }) {
 }
 
 // ── Dashboard View ────────────────────────────────────────────────────────────
-function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, filterUser, setFilterUser, statusFilter, setStatusFilter, groupBy, setGroupBy, viewMode, setViewMode, groupedTasks, visibleTasks, animatingIds, onCheckClick, onAddTask, onEditTask, onViewHistory }) {
+function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, filterUser, setFilterUser, statusFilter, setStatusFilter, groupBy, setGroupBy, viewMode, setViewMode, groupedTasks, visibleTasks, animatingIds, onCheckClick, onAddTask, onEditTask }) {
   const total = tasks.length;
   const overdueTasks = tasks.filter((t) => daysOverdue(t) > 0).length;
   const dueSoonTasks = tasks.filter((t) => { const d = daysOverdue(t); return d <= 0 && d >= -3; }).length; // due today through 3 days out
@@ -654,17 +655,12 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
 
       <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.07)" }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
-            <button className="pill-btn" onClick={() => setSelectedCat("all")}
-              style={{ padding: "6px 14px", borderRadius: 20, background: selectedCat === "all" ? "#FFD93D" : "#f5f5f5", color: selectedCat === "all" ? "#1A1A2E" : "#555", fontSize: 13 }}>All</button>
-            {categories.map((c) => (
-              <button key={c.id} className="pill-btn" onClick={() => setSelectedCat(c.id)}
-                style={{ padding: "6px 14px", borderRadius: 20, background: selectedCat === c.id ? c.color : "#f5f5f5", color: selectedCat === c.id ? "#fff" : "#555", fontSize: 13 }}>
-                {c.emoji} {c.name}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
+            <select className="form-input" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}
+              style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
+              <option value="all">All Categories</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+            </select>
             <select className="form-input" value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
               style={{ padding: "6px 12px", borderRadius: 20, fontSize: 13, width: "auto" }}>
               <option value="all">👤 All Users</option>
@@ -676,16 +672,16 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
                 {groupBy === "category" ? "📂 Grouped" : "📋 Flat"}
               </button>
             )}
-            <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
-              <button className="pill-btn" onClick={() => setViewMode("cutesy")}
-                style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
-                🌈 Cutesy
-              </button>
-              <button className="pill-btn" onClick={() => setViewMode("compact")}
-                style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
-                📊 Compact
-              </button>
-            </div>
+          </div>
+          <div style={{ display: "flex", borderRadius: 20, background: "#f5f5f5", padding: 3 }}>
+            <button className="pill-btn" onClick={() => setViewMode("cutesy")}
+              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "cutesy" ? "#fff" : "transparent", color: viewMode === "cutesy" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "cutesy" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+              🌈 Cutesy
+            </button>
+            <button className="pill-btn" onClick={() => setViewMode("compact")}
+              style={{ padding: "5px 12px", borderRadius: 17, background: viewMode === "compact" ? "#fff" : "transparent", color: viewMode === "compact" ? "#1A1A2E" : "#aaa", fontSize: 13, boxShadow: viewMode === "compact" ? "0 2px 6px rgba(0,0,0,0.08)" : "none" }}>
+              📊 Compact
+            </button>
           </div>
         </div>
 
@@ -693,33 +689,20 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 800, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>📍 Showing</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: STATUS_FILTER_STEPS[statusFilter].short === "Overdue" ? "#FF6B6B" : "#1A1A2E", background: STATUS_FILTER_STEPS[statusFilter].short === "Overdue" ? "#FFE5E5" : "#FFF8E1", padding: "3px 12px", borderRadius: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 800,
+              color: statusFilter === 0 ? "#FF6B6B" : statusFilter === 1 ? "#FFD93D" : "#1A1A2E",
+              background: statusFilter === 0 ? "#FFE5E5" : statusFilter === 1 ? "#FFFBE1" : "#F5F5F5",
+              padding: "3px 12px", borderRadius: 10 }}>
               {STATUS_FILTER_STEPS[statusFilter].label}
             </span>
           </div>
-          <input
-            type="range"
-            min={0}
-            max={6}
-            step={1}
-            value={statusFilter}
+          <input type="range" min={0} max={4} step={1} value={statusFilter}
             onChange={(e) => setStatusFilter(parseInt(e.target.value))}
-            className="status-slider"
-            style={{
-              width: "100%",
-              accentColor: "#FF9F43",
-            }}
-          />
+            className="status-slider" style={{ width: "100%", accentColor: "#FF9F43" }} />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
             {STATUS_FILTER_STEPS.map((s, i) => (
-              <span key={i}
-                onClick={() => setStatusFilter(i)}
-                style={{
-                  fontSize: 10, fontWeight: statusFilter === i ? 800 : 600,
-                  color: statusFilter === i ? "#FF9F43" : "#ccc",
-                  cursor: "pointer", textAlign: "center", flex: 1,
-                  whiteSpace: "nowrap", userSelect: "none",
-                }}>
+              <span key={i} onClick={() => setStatusFilter(i)}
+                style={{ fontSize: 10, fontWeight: statusFilter === i ? 800 : 600, color: statusFilter === i ? "#FF9F43" : "#ccc", cursor: "pointer", textAlign: "center", flex: 1, whiteSpace: "nowrap", userSelect: "none" }}>
                 {s.short}
               </span>
             ))}
@@ -727,8 +710,31 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
         </div>
       </div>
 
-
-      {visibleTasks.length === 0 ? (
+      {visibleTasks.length === 0 && tasks.length > 0 && (statusFilter === 0 || statusFilter === 1) ? (
+        // All-caught-up celebration state (#4)
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div style={{ fontSize: 72, marginBottom: 16 }}>🎉</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#1A1A2E", marginBottom: 10 }}>
+            You're all caught up!
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>
+            Nothing overdue or due today. 
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#C77DFF", marginBottom: 32 }}>
+            Do something nice for yourself and come back tomorrow. 💜
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+            <button className="pill-btn" onClick={() => setStatusFilter(3)}
+              style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>
+              👀 See what's coming this week
+            </button>
+            <button className="pill-btn" onClick={() => setStatusFilter(4)}
+              style={{ padding: "10px 24px", borderRadius: 20, background: "#f5f5f5", color: "#555", fontSize: 13 }}>
+              📋 See all tasks
+            </button>
+          </div>
+        </div>
+      ) : visibleTasks.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "#bbb" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🌟</div>
           <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>No tasks here!</div>
@@ -739,7 +745,7 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
       ) : viewMode === "compact" ? (
         <div>
           <TaskTable tasks={visibleTasks} categories={categories} users={users}
-            animatingIds={animatingIds} onCheckClick={onCheckClick} onEdit={onEditTask} onViewHistory={onViewHistory} />
+            animatingIds={animatingIds} onCheckClick={onCheckClick} onEdit={onEditTask} />
           <button className="pill-btn" onClick={onAddTask}
             style={{ width: "100%", padding: "14px", borderRadius: 16, background: "linear-gradient(135deg, #FFD93D, #FF9F43)", color: "#fff", fontSize: 15, marginTop: 12 }}>
             + Add Task
@@ -763,7 +769,6 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
                     completing={animatingIds.has(task.id)}
                     onCheckClick={(e) => onCheckClick(task, e)}
                     onEdit={() => onEditTask(task)}
-                    onViewHistory={() => onViewHistory(task)}
                   />
                 ))}
               </div>
@@ -780,7 +785,7 @@ function DashboardView({ tasks, categories, users, selectedCat, setSelectedCat, 
 }
 
 // ── Task Card ─────────────────────────────────────────────────────────────────
-function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, onViewHistory }) {
+function TaskCard({ task, categories, users, completing, onCheckClick, onEdit }) {
   const cat = categories.find((c) => c.id === task.categoryId);
   const { label, color } = overdueLabel(task);
   const nx = nextAssignee(task, users);
@@ -788,7 +793,6 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
   const eff = effectiveFreq(task);
   const due = nextDueDate(task);
   const last = lastCompletedDate(task);
-  const historyCount = (task.history || []).length;
 
   return (
     <div className={`task-card ${completing ? "completing" : ""}`}
@@ -816,8 +820,8 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
               📊 avg {freqLabel(avg)}
             </span>
           )}
-          {last && <span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>Last: {last}</span>}
-          {due && <span style={{ fontSize: 11, color: "#4ECDC4", fontWeight: 700 }}>Due: {due}</span>}
+          {last && <span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>Last: {formatDateLong(last)}</span>}
+          {due && <span style={{ fontSize: 11, color: "#4ECDC4", fontWeight: 700 }}>Due: {formatDateShort(due)}</span>}
         </div>
       </div>
 
@@ -825,10 +829,6 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
         <span style={{ fontSize: 12, fontWeight: 800, color, background: color + "18", padding: "3px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{label}</span>
         {nx && <span style={{ fontSize: 11, fontWeight: 700, color: "#C77DFF", background: "#C77DFF18", padding: "2px 8px", borderRadius: 10 }}>👤 {nx}</span>}
         {task.assignMode === "any" && <span style={{ fontSize: 11, fontWeight: 700, color: "#4ECDC4", background: "#4ECDC418", padding: "2px 8px", borderRadius: 10 }}>Anyone</span>}
-        <button className="pill-btn" onClick={onViewHistory}
-          style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, background: "#f0f0ff", color: "#C77DFF" }}>
-          📅 {historyCount}
-        </button>
       </div>
     </div>
   );
@@ -837,18 +837,17 @@ function TaskCard({ task, categories, users, completing, onCheckClick, onEdit, o
 // ── Task Table (compact view) ───────────────────────────────────────────────────
 const TABLE_COLS = [
   { key: "status", label: "", width: 44 },
-  { key: "history", label: "", width: 40 },
   { key: "name", label: "Task", width: undefined },
-  { key: "due", label: "Due Date", width: 110 },
   { key: "status_label", label: "Status", width: 120 },
+  { key: "due", label: "Due Date", width: 120 },
   { key: "category", label: "Category", width: 140 },
   { key: "goal", label: "Goal", width: 110 },
   { key: "avg", label: "Avg", width: 100 },
-  { key: "last", label: "Last Done", width: 110 },
+  { key: "last", label: "Last Done", width: 130 },
   { key: "assignee", label: "Assigned", width: 110 },
 ];
 
-function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdit, onViewHistory }) {
+function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdit }) {
   const [sortKey, setSortKey] = useState("due");
   const [sortDir, setSortDir] = useState("asc"); // asc = most overdue/soonest first
 
@@ -881,7 +880,7 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
   });
 
   const toggleSort = (key) => {
-    if (key === "status" || key === "history") return;
+    if (key === "status") return;
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -904,7 +903,7 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
                     textAlign: col.key === "name" ? "left" : "left",
                     padding: "10px 12px",
                     fontWeight: 800, color: "#888", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5,
-                    cursor: (col.key === "status" || col.key === "history") ? "default" : "pointer",
+                    cursor: col.key === "status" ? "default" : "pointer",
                     whiteSpace: "nowrap", userSelect: "none",
                     width: col.width,
                   }}>
@@ -920,7 +919,6 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
                 completing={animatingIds.has(task.id)}
                 onCheckClick={(e) => onCheckClick(task, e)}
                 onEdit={() => onEdit(task)}
-                onViewHistory={() => onViewHistory(task)}
               />
             ))}
           </tbody>
@@ -933,7 +931,7 @@ function TaskTable({ tasks, categories, users, animatingIds, onCheckClick, onEdi
   );
 }
 
-function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdit, onViewHistory }) {
+function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdit }) {
   const cat = categories.find((c) => c.id === task.categoryId);
   const { label, color } = overdueLabel(task);
   const nx = nextAssignee(task, users);
@@ -956,10 +954,6 @@ function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdi
           {completing ? "✓" : "○"}
         </button>
       </td>
-      <td style={{ padding: "8px 6px" }}>
-        <button className="pill-btn" onClick={onViewHistory}
-          style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, background: "#f0f0ff", color: "#C77DFF" }}>📅</button>
-      </td>
       <td style={{ padding: "8px 12px", fontWeight: 800, color: "#1A1A2E", whiteSpace: "nowrap", position: "relative" }}>
         <span onClick={onEdit} role="button" tabIndex={0}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(); } }}
@@ -967,10 +961,10 @@ function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdi
           {cat?.emoji} {task.name}
         </span>
       </td>
-      <td style={{ padding: "8px 12px", color: "#4ECDC4", fontWeight: 700, whiteSpace: "nowrap" }}>{due || "—"}</td>
       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
         <span style={{ fontSize: 12, fontWeight: 800, color, background: color + "18", padding: "3px 10px", borderRadius: 10 }}>{label}</span>
       </td>
+      <td style={{ padding: "8px 12px", color: "#4ECDC4", fontWeight: 700, whiteSpace: "nowrap" }}>{formatDateShort(due)}</td>
       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
         {cat && <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, background: cat.color + "18", padding: "2px 8px", borderRadius: 10 }}>{cat.name}</span>}
       </td>
@@ -978,7 +972,7 @@ function TaskTableRow({ task, categories, users, completing, onCheckClick, onEdi
       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
         {avg ? <span style={{ fontSize: 12, fontWeight: 700, color: "#FF9F43" }}>{freqLabel(avg)}</span> : <span style={{ color: "#ddd" }}>—</span>}
       </td>
-      <td style={{ padding: "8px 12px", color: "#aaa", fontWeight: 600, whiteSpace: "nowrap" }}>{last || "—"}</td>
+      <td style={{ padding: "8px 12px", color: "#aaa", fontWeight: 600, whiteSpace: "nowrap" }}>{formatDateLong(last)}</td>
       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
         {nx ? (
           <span style={{ fontSize: 11, fontWeight: 700, color: "#C77DFF", background: "#C77DFF18", padding: "2px 8px", borderRadius: 10 }}>👤 {nx}</span>
@@ -1410,6 +1404,31 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo || users[0] || "");
   const [suggestions, setSuggestions] = useState([]);
 
+  // History state (only used when editing an existing task)
+  const [history, setHistory] = useState(() =>
+    [...(task?.history || [])].sort((a, b) => new Date(b.date) - new Date(a.date))
+  );
+  const [newHistDate, setNewHistDate] = useState(today());
+  const [newHistWho, setNewHistWho] = useState(users[0] || "");
+  const [editingHistId, setEditingHistId] = useState(null);
+  const [editHistDate, setEditHistDate] = useState("");
+  const [editHistWho, setEditHistWho] = useState("");
+
+  const avg = avgCadence(history);
+  const eff = task ? effectiveFreq({ ...task, history }) : null;
+
+  const addHistEntry = () => {
+    if (!newHistDate) return;
+    const entry = { id: uid(), date: newHistDate, completedBy: newHistWho };
+    setHistory((h) => [...h, entry].sort((a, b) => new Date(b.date) - new Date(a.date)));
+  };
+  const deleteHistEntry = (id) => setHistory((h) => h.filter((e) => e.id !== id));
+  const saveHistEdit = () => {
+    setHistory((h) => h.map((e) => e.id === editingHistId ? { ...e, date: editHistDate, completedBy: editHistWho } : e)
+      .sort((a, b) => new Date(b.date) - new Date(a.date)));
+    setEditingHistId(null);
+  };
+
   const cat = categories.find((c) => c.id === categoryId);
 
   useEffect(() => {
@@ -1424,30 +1443,23 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
     }
   }, [categoryId, name]);
 
-  const setFreq = (days) => {
-    setFrequencyDays(days);
-    setCustomInput(days ? String(days) : "");
-  };
-
-  const handleCustomInput = (val) => {
-    setCustomInput(val);
-    const n = parseInt(val);
-    setFrequencyDays(n > 0 ? n : null);
-  };
+  const setFreq = (days) => { setFrequencyDays(days); setCustomInput(days ? String(days) : ""); };
+  const handleCustomInput = (val) => { setCustomInput(val); const n = parseInt(val); setFrequencyDays(n > 0 ? n : null); };
 
   const handleSave = () => {
     if (!name.trim()) return;
-    let history = task?.history || [];
-    // If this is a new task and a "last completed" date was entered, log it as the first history entry
+    let finalHistory = task ? history : [...history];
     if (!task && lastCompleted) {
-      history = [...history, { id: uid(), date: lastCompleted, completedBy: assignedTo || users[0] || null }];
+      finalHistory = [...finalHistory, { id: uid(), date: lastCompleted, completedBy: assignedTo || users[0] || null }];
     }
-    onSave({ id: task?.id, name: name.trim(), categoryId, frequencyDays, lastCompleted, assignMode, assignedTo, lastCompletedBy: task?.lastCompletedBy, completions: history.length, history });
+    const sortedHistory = [...finalHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const latestCompleted = sortedHistory[0]?.date || lastCompleted || "";
+    onSave({ id: task?.id, name: name.trim(), categoryId, frequencyDays, lastCompleted: latestCompleted, assignMode, assignedTo, lastCompletedBy: sortedHistory[0]?.completedBy || task?.lastCompletedBy, completions: sortedHistory.length, history: sortedHistory });
   };
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal" style={{ maxWidth: 560 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1A1A2E" }}>{task ? "✏️ Edit Task" : "✨ Add Task"}</h3>
           <button className="pill-btn" onClick={onClose} style={{ padding: "6px 12px", borderRadius: 10, background: "#f5f5f5", color: "#888" }}>✕</button>
@@ -1488,18 +1500,19 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#aaa", whiteSpace: "nowrap" }}>Custom days:</span>
             <input className="form-input" type="number" min={1} value={customInput} placeholder="e.g. 45"
-              onChange={(e) => handleCustomInput(e.target.value)}
-              style={{ width: 90 }} />
+              onChange={(e) => handleCustomInput(e.target.value)} style={{ width: 90 }} />
             {frequencyDays && !FREQ_PRESETS.find(p => p.days === frequencyDays) && (
               <span style={{ fontSize: 12, color: "#aaa", fontWeight: 700 }}>≈ {freqLabel(frequencyDays)}</span>
             )}
           </div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Last Completed</label>
-          <input className="form-input" type="date" value={lastCompleted} onChange={(e) => setLastCompleted(e.target.value)} max={today()} />
-        </div>
+        {!task && (
+          <div className="form-group">
+            <label className="form-label">Last Completed</label>
+            <input className="form-input" type="date" value={lastCompleted} onChange={(e) => setLastCompleted(e.target.value)} max={today()} />
+          </div>
+        )}
 
         <div className="form-group">
           <label className="form-label">Assignment 👤</label>
@@ -1518,7 +1531,84 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        {/* Completion History (editing only) */}
+        {task && (
+          <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #f5f5f5" }}>
+            <div style={{ fontWeight: 800, color: "#555", fontSize: 14, marginBottom: 12 }}>📅 Completion History</div>
+
+            {/* Stats chips */}
+            {history.length > 0 && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, background: "#fff8ed", borderRadius: 10, padding: "8px 12px", minWidth: 80 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#FF9F43" }}>AVG</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A2E" }}>{avg ? freqLabel(avg) : "—"}</div>
+                </div>
+                {eff && eff !== frequencyDays && (
+                  <div style={{ flex: 1, background: "#edfff8", borderRadius: 10, padding: "8px 12px", minWidth: 80 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#06D6A0" }}>EFFECTIVE</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A2E" }}>{freqLabel(eff)}</div>
+                  </div>
+                )}
+                <div style={{ flex: 1, background: "#f0f9ff", borderRadius: 10, padding: "8px 12px", minWidth: 80 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECDC4" }}>TOTAL</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1A1A2E" }}>{history.length}×</div>
+                </div>
+              </div>
+            )}
+
+            {/* Add entry row */}
+            <div style={{ background: "#f9f9f9", borderRadius: 12, padding: 12, marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#888", marginBottom: 8 }}>+ Add Completion</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <input className="form-input" type="date" value={newHistDate} max={today()} onChange={(e) => setNewHistDate(e.target.value)} style={{ flex: 2 }} />
+                {users.length > 1 && (
+                  <select className="form-input" value={newHistWho} onChange={(e) => setNewHistWho(e.target.value)} style={{ flex: 2 }}>
+                    {users.map((u) => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                )}
+                <button className="pill-btn" onClick={addHistEntry}
+                  style={{ padding: "10px 16px", borderRadius: 10, background: "#FFD93D", color: "#1A1A2E", fontSize: 13, height: 42 }}>Add</button>
+              </div>
+            </div>
+
+            {/* History list */}
+            <div style={{ maxHeight: 220, overflowY: "auto" }}>
+              {history.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 16, color: "#bbb", fontWeight: 700, fontSize: 13 }}>No history yet</div>
+              ) : history.map((entry, i) => (
+                <div key={entry.id} className="history-row">
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#f0f0ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#C77DFF", flexShrink: 0 }}>
+                    {history.length - i}
+                  </div>
+                  {editingHistId === entry.id ? (
+                    <>
+                      <input className="form-input" type="date" value={editHistDate} max={today()} onChange={(e) => setEditHistDate(e.target.value)} style={{ flex: 2 }} />
+                      {users.length > 1 && (
+                        <select className="form-input" value={editHistWho} onChange={(e) => setEditHistWho(e.target.value)} style={{ flex: 2 }}>
+                          {users.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      )}
+                      <button className="pill-btn" onClick={saveHistEdit} style={{ padding: "4px 10px", borderRadius: 8, background: "#06D6A0", color: "#fff", fontSize: 12 }}>Save</button>
+                      <button className="pill-btn" onClick={() => setEditingHistId(null)} style={{ padding: "4px 8px", borderRadius: 8, background: "#f5f5f5", color: "#888", fontSize: 12 }}>✕</button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 800, color: "#1A1A2E", fontSize: 13 }}>{formatDateLong(entry.date)}</div>
+                        {entry.completedBy && <div style={{ fontSize: 11, color: "#aaa", fontWeight: 600 }}>by {entry.completedBy}</div>}
+                      </div>
+                      {i > 0 && (() => { const gap = daysBetween(entry.date, history[i-1].date); return gap > 0 ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 700, whiteSpace: "nowrap" }}>{gap}d gap</span> : null; })()}
+                      <button className="pill-btn" onClick={() => { setEditingHistId(entry.id); setEditHistDate(entry.date); setEditHistWho(entry.completedBy || ""); }} style={{ padding: "3px 8px", borderRadius: 8, background: "#f5f5f5", color: "#888", fontSize: 11 }}>✏️</button>
+                      <button className="pill-btn" onClick={() => deleteHistEntry(entry.id)} style={{ padding: "3px 6px", borderRadius: 8, background: "#FFE5E5", color: "#FF6B6B", fontSize: 11 }}>✕</button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button className="pill-btn" onClick={onClose}
             style={{ flex: 1, padding: "12px", borderRadius: 14, background: "#f5f5f5", color: "#666", fontSize: 15 }}>Cancel</button>
           <button className="pill-btn" onClick={handleSave}
@@ -1534,10 +1624,10 @@ function TaskModal({ task, categories, users, onSave, onClose }) {
 // ── Category Modal ────────────────────────────────────────────────────────────
 function CategoryModal({ cat, onSave, onClose }) {
   const [name, setName] = useState(cat?.name || "");
-  const [emoji, setEmoji] = useState(cat?.emoji || "📌");
+  const [emoji, setEmoji] = useState(cat?.emoji || "☑️");
   const [color, setColor] = useState(cat?.color || "#FFD93D");
   const COLORS = ["#FFD93D","#FF6B6B","#4ECDC4","#C77DFF","#06D6A0","#FF9F43","#74B9FF","#FD79A8","#A29BFE","#55EFC4"];
-  const EMOJIS = ["📌","⭐","🎯","💪","🏡","🌿","🚗","💰","🎨","🎵","🐾","🌸","🔥","❄️","🎮","📚","🍳","💊","🧹","🌟"];
+  const EMOJIS = ["💍","⭐","🎯","💪","🏡","🌿","🚙","💰","🎨","🎵","🐾","🌸","🎮","📚","🍎","💊","🧹","🌟"];
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
