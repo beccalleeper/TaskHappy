@@ -1617,7 +1617,7 @@ function CategoryModal({ cat, onSave, onClose }) {
   const [emoji, setEmoji] = useState(cat?.emoji || "☑️");
   const [color, setColor] = useState(cat?.color || "#FFD93D");
   const COLORS = ["#FFD93D","#FF6B6B","#4ECDC4","#C77DFF","#06D6A0","#FF9F43","#74B9FF","#FD79A8","#A29BFE","#55EFC4"];
-  const EMOJIS = ["⭐","🎯","💪","✝️","🌿","💵","🍼","🐾","🎉","🐶","🐱"," 📚","🍎","💊","🧹","💍 ","🧺"];
+  const EMOJIS = ["⭐","🎯","💪","✝️","🌿","💵","🍼","🐾","🎉","🐶","🐱","📚","🍎","💊","🧹","💍","🧺"];
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
